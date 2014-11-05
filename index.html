@@ -1,221 +1,161 @@
 ﻿<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>My First Game</title>
     <script type="text/javascript" src="js/simpleGame.js"></script>
+    <script type="text/javascript" src="js/sprites.js"></script>
+    <script type="text/javascript" src="js/utilityfunctions.js"></script>
+    <script type="text/javascript" src="js/collisionfunctions.js"></script>
     <script>
-        alert("USE ARROW KEYS TO MOVE FORWARD, HIT AS MANY asteroids AS POSSIBLE IN 50 SECONDS");
+    var levels = '{ "levels" : [' +
+            '{ "numEnemyAsteroids":5 , "asteroidsToNextLevel": 5,  "EnemyShipRespawnDelay": 20,  "EnemyShootDelay": 10,   "EnemyLaserSpeed": 20   },' +
+            '{ "numEnemyAsteroids":6 , "asteroidsToNextLevel": 6,  "EnemyShipRespawnDelay": 19,  "EnemyShootDelay": 9.5,   "EnemyLaserSpeed": 22  },' +
+            '{ "numEnemyAsteroids":7 , "asteroidsToNextLevel": 7,  "EnemyShipRespawnDelay": 18,  "EnemyShootDelay": 8.5,   "EnemyLaserSpeed": 25  },' +
+            '{ "numEnemyAsteroids":8 , "asteroidsToNextLevel": 8,  "EnemyShipRespawnDelay": 17,  "EnemyShootDelay": 5,   "EnemyLaserSpeed": 30  },' +
+            '{ "numEnemyAsteroids":9 , "asteroidsToNextLevel": 9,  "EnemyShipRespawnDelay": 16,  "EnemyShootDelay": 4.5,   "EnemyLaserSpeed": 32  },' +
+            '{ "numEnemyAsteroids":10 , "asteroidsToNextLevel": 10,  "EnemyShipRespawnDelay": 15 ,  "EnemyShootDelay": 4,   "EnemyLaserSpeed": 35 },' +
+            '{ "numEnemyAsteroids":11 , "asteroidsToNextLevel": 11,  "EnemyShipRespawnDelay": 14,  "EnemyShootDelay": 3.5,   "EnemyLaserSpeed": 40   },' +
+            '{ "numEnemyAsteroids":11 , "asteroidsToNextLevel": 11,  "EnemyShipRespawnDelay": 14,  "EnemyShootDelay": 3.5,   "EnemyLaserSpeed": 40   },' +
+            '{ "numEnemyAsteroids":11 , "asteroidsToNextLevel": 11,  "EnemyShipRespawnDelay": 14,  "EnemyShootDelay": 3.5,   "EnemyLaserSpeed": 40   },' +
+            '{ "numEnemyAsteroids":11 , "asteroidsToNextLevel": 11,  "EnemyShipRespawnDelay": 14,  "EnemyShootDelay": 3.5,   "EnemyLaserSpeed": 40   },' +
+            '{ "numEnemyAsteroids":11 , "asteroidsToNextLevel": 11,  "EnemyShipRespawnDelay": 14,  "EnemyShootDelay": 3.5,   "EnemyLaserSpeed": 40   },' +
+            '{ "numEnemyAsteroids":15 , "asteroidsToNextLevel": 100,  "EnemyShipRespawnDelay": 10,  "EnemyShootDelay": 2,   "EnemyLaserSpeed": 45   } ]}';
         var scene;
+        var spread = 20;  //How far bullets will spread
         var ship;
         var asteroids;
         var score;
-        var scoreDiv;
-        var livesDiv;
+
         var timer;
         var eTime;
         var test;
         var laser;
         var lasers;
         var laserTimer;
-        var NUMASTEROIDS = 5;
+
+        var NUMASTEROIDS = 50;
+        var numCurrentAsteroids;
         var MAXTIME = 1000;
-        var NUMLASERS = 15;
+        var NUMLASERS = 25;
         var currentLaser = 0;
-        var delay = .1;
+        var delay = 1; // laser delay
         var NUMLIVES = 5;
         var laserSoundMP3;
         var explosionSoundMP3;
         var gameOverMP3;
+        //EnemyVars
+        var enemyLaserSpeed;
+        var enemyShip;
+        var EnemyLaserTimer;
+        var NUMENEMYLASERS = 25;
+        var currentEnemyLaser = 0;
+        var enemyLasers;
+        var enemyRespawnTimer;
+        var ENEMYSPAWNDELAY = 10;
+        var enemyDelay = 5; //DELAY FOR LASER SHOOTING
 
+        var enemyShipHealth = 2;
+        //ship immune timer var
+        var shipTimer;
+        var shipDelay = 3; // how many seconds the ship is immune after a collision
+        //Vars to check the conditions for the next level
+        var currentLevel = 0; //the variable for the current level
+        var numAsteroidsKilled = 0; //number killed on this level. resets every level
+        var numAsteroidsToNextLevel; //number of asteroids need to killed to go to the next level
+        //json var
+        var levelsArray = JSON.parse(levels);
+        //Div vars
+        var scoreDiv;
+        var livesDiv;
+        var levelDiv;
+        var nextLevelDiv;
+        //powerup sprite
+        var laserPowerUp;
+        var powerUpTimer; // the timer for the laser powerup time
+        var powerUpTime = 10; //How long the powerup laser powerup lasts
         function init() {
             scoreDiv = document.getElementById("scoreDiv");
             livesDiv = document.getElementById("livesDiv");
+            levelDiv = document.getElementById("currentLevelDiv");
+            nextLevelDiv = document.getElementById("asteroidsLeftOnLevelDiv");
+            numAsteroidsKilled = 0;
+            numCurrentAsteroids= levelsArray.levels[currentLevel].numEnemyAsteroids;
+            numAsteroidsToNextLevel = levelsArray.levels[currentLevel].asteroidsToNextLevel;
+            ENEMYSPAWNDELAY = levelsArray.levels[currentLevel].EnemyShipRespawnDelay;
+            enemyLaserSpeed = levelsArray.levels[currentLevel].EnemyLaserSpeed;
+            enemyDelay = levelsArray.levels[currentLevel].EnemyShootDelay;
 
             updateLives();
             scene = new Scene();
             scene.setBG("black");
-            scene.setSize(1400,750);
+            scene.setSize(1200,650);
             score = 0;
+            shipTimer = new Timer();
             makeLasers();
+            makeEnemyLasers();
             ship = new Ship();
+            enemyShip = new EnemyShip();
+            laserPowerUp = new LaserPowerUp();
             setupAsteroids();
             scene.start();
+            laserPowerUp.spawn();
             timer = new Timer();
             laserTimer = new Timer();
+            EnemyLaserTimer = new Timer();
             laserSoundMP3 = new Sound("laser.mp3");
             explosionSoundMP3 = new Sound("explosion.mp3");
             gameOverMP3 = new Sound("gameover.mp3");
         }
         function update()
         {
+
             scene.clear();
+            checkForLevelUpdate();
             checkTime();
             ship.checkKeys();
             ship.checkDrag();
             ship.update();
 
+            laserPowerUp.update();
+            laserPowerUp.checkForEnd();
+            laserPowerUp.spawn();
+
+
+            checkShipCollision();
             updateLasers();
-            for (i = 0; i < NUMASTEROIDS; i++) {
+            updateEnemyLasers();
+
+            for (i = 0; i < numCurrentAsteroids; i++) {
                 for (j = 0; j< NUMLASERS; j++){
                     checkCollisions(i,j);
+                    checkEnemyCollisions(j);
 
                 }
                 asteroids[i].update();
+                asteroids[i].show();
+
 
                
             }
+            enemyShip.update();
+            enemyShip.changeDirection();
+            enemyShip.fireLaser();
+            enemyShip.respawn();
+
+
             
             
         }
-        function setupAsteroids() {
-            asteroids = new Array(NUMASTEROIDS);
-            for (i = 0; i < NUMASTEROIDS; i++){
-                asteroids[i] = new Asteroid();
-            }
-        }
-        function checkCollisions(asteroidNum,laserNum) {
-            if(ship.collidesWith(asteroids[asteroidNum])){
 
-                NUMLIVES--;
-                updateLives();
-                if(NUMLIVES == 0)
-                {
-                    scene.stop();
-                }
-                gameOverMP3.play();
 
-                asteroids[asteroidNum].reset();
-            }
-            if(lasers[laserNum].collidesWith(asteroids[asteroidNum]))
-            {
-                asteroids[asteroidNum].reset();
-                explosionSoundMP3.play();
-                lasers[laserNum].hide();
 
-                score += 5;
-                updateScore();
-
-            }
-        }
-        function updateScore() {
-            //update the scoreboard
-            scoreDiv.innerHTML = "Score: " + score + ". Time: " + eTime;
-        }
-        function updateLives()
-        {
-            livesDiv.innerHTML = "Lives: " + NUMLIVES;
-        }
-        function checkTime() {
-            eTime = timer.getElapsedTime();
-            if (eTime > MAXTIME) {
-                scene.stop();
-                document.getElementById("reset").style.visibility = 'visible';
-            } // end if
-            updateScore();
-
-        }
-        function Asteroid()
-        {
-            tAsteroid = new Sprite(scene, "./images/asteroid.png", 60, 60);
-            tAsteroid.setSpeed(5);
-            tAsteroid.setAngle((Math.random() * 90) - 45);
-            tAsteroid.reset = function () {
-                //set new random position
-                newX = Math.random() * this.cWidth;
-                newY = Math.random() * this.cHeight;
-                this.setPosition(newX, newY);
-            }
-            tAsteroid.reset();
-            return tAsteroid;
-
-        }
-        function Ship() {
-            tShip = new Sprite(scene, "./images/shuttle2_0.png", 50, 50);
-            tShip.maxSpeed = 15;
-            tShip.minSpeed = -1;
-            tShip.setSpeed(0);
-            tShip.setAngle(0);
-            tShip.checkKeys = function () {
-                
-                if (keysDown[K_LEFT]) {
-                    this.changeImgAngleBy(-5);
-                } // end if
-                if (keysDown[K_RIGHT]) {
-                    this.changeImgAngleBy(5);
-                } // end if
-                if (keysDown[K_UP]) {
-                    this.addVector(this.getImgAngle(), 3);
-                    if (this.speed > this.maxSpeed) {
-                        this.setSpeed(this.maxSpeed);
-                    } // end if
-                } // end if
-                if (keysDown[K_DOWN]) {
-                    this.addVector(this.getImgAngle(), -.5);
-                    if (this.speed < this.minSpeed) {
-                        this.setSpeed(this.minSpeed);
-                    } // end if
-                } // end if
-                if (keysDown[K_SPACE]){
-                    laserElapsedTime = laserTimer.getElapsedTime();
-                    if(laserElapsedTime > delay)
-                    {
-
-                        currentLaser++;
-                        if(currentLaser >= NUMLASERS)
-                        {
-                            currentLaser = 0;
-                        }
-                        lasers[currentLaser].fire();
-                        laserSoundMP3.play();
-                        laserTimer.reset();
-                    }
-                }
-            }
-            tShip.checkDrag = function () {           
-                    speed = this.getSpeed();
-                    speed *= .95;
-                    this.setSpeed(speed);
-            }
-            return tShip;
-        }
-        function Laser()
-        {
-            var tLaser = new Sprite(scene, "./images/lasers.png", 30, 20);
-            tLaser.hide();
-
-            tLaser.fire = function()
-            {
-                this.show();
-                this.setSpeed(45);
-                this.setBoundAction(BOUNCE);
-                this.setPosition(ship.x,ship.y);
-                this.setAngle(ship.getImgAngle());
-
-            }
-            return tLaser;
-        }
-        function makeLasers()
-        {
-            lasers = new Array(NUMLASERS);
-            for(i = 0; i < NUMLASERS; i++){
-                lasers[i] = new Laser();
-            }
-
-        }
-        function updateLasers()
-        {
-            for(i = 0; i < NUMLASERS; i++){
-                lasers[i].update();
-            }
-        }
-        function restart() {
-            document.location.href = "";
-        } // end restart
+  // end restart
     </script>
 </head>
 <body onload="init()">
-    <div id="scoreDiv">s</div>
+    <div id="scoreDiv"></div>
     <div id="livesDiv"></div>
+    <div id="currentLevelDiv"></div>
+    <div id="asteroidsLeftOnLevelDiv"></div>
     <button type="button" id="reset" style=" position: absolute; top:0px; left:180px; visibility:hidden;" onclick="restart()">Reset Game</button>
 
 </body>

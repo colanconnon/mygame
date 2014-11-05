@@ -746,6 +746,7 @@ function Timer() {
         return (current - this.startTime) / 1000;
     } // end getElapsedTime
 
+
     //make alias functions for animations...
     this.start = this.reset;
     this.getTimeElapsed = this.getElapsedTime;
